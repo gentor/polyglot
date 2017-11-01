@@ -23,7 +23,7 @@ class PolyglotServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->configPath = __DIR__.'/'.$this->configPath;
+        $this->configPath = __DIR__ . '/' . $this->configPath;
 
         $this->mergeConfigFrom($this->configPath, 'polyglot');
 
@@ -61,7 +61,7 @@ class PolyglotServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        
+
         $this->publishes([$this->configPath => config_path('polyglot.php')], 'config');
 
         // Swap facades if need be
@@ -94,15 +94,22 @@ class PolyglotServiceProvider extends ServiceProvider
      */
     protected function swapFacades()
     {
-        $facades  = $this->app['config']->get('polyglot.facades');
+        $facades = $this->app['config']->get('polyglot.facades');
         $bindings = ['Lang' => 'translator', 'Route' => 'router', 'URL' => 'url'];
 
         if ($facades) {
             $facades = $facades === true ? ['Lang', 'Route', 'URL'] : $facades;
             foreach ($facades as $facade) {
+                if ($facade == 'Lang') {
+                    // Set fallback locale for translations
+                    $fallback = $this->app['config']->get('polyglot.fallback') ?:
+                        $this->app['config']->get('polyglot.default') ?:
+                            $this->app['config']->get('app.fallback_locale');
+                    $this->app['polyglot.translator']->setFallback($fallback);
+                }
                 $binding = $bindings[$facade];
-                $facade  = 'Illuminate\Support\Facades\\'.$facade;
-                $facade::swap($this->app['polyglot.'.$binding]);
+                $facade = 'Illuminate\Support\Facades\\' . $facade;
+                $facade::swap($this->app['polyglot.' . $binding]);
             }
         }
     }
